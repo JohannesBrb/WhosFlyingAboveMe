@@ -56,15 +56,25 @@ class Tracker():
 
     def get_closest_plane_info(self):
         self.closest_plane = self.query_plane()
-        airports_ticker, airport_prov, airport_dest = self.query_route_info()
-        try:
-            flight_nb = self.closest_plane["ac"][0]["flight"].strip()
-        except:
-            flight_nb = "Unknown"
-            airports_ticker = "Unknown"
-            airport_prov = "Unknown"
-            airport_dest = "Unknown"
-        return flight_nb, airports_ticker, airport_prov, airport_dest
+        # Try to get flight number first            
+        
+        if self.closest_plane["total"] == 0:
+                return "No planes in range", " ", ".", "."
+        else:  
+            try:
+                flight_nb = self.closest_plane["ac"][0]["flight"].strip()
+            except:
+                flight_nb = "Unknown"
+
+            # Try to get route info, but don't overwrite flight_nb if route fails
+            try:
+                airports_ticker, airport_prov, airport_dest = self.query_route_info()
+            except:
+                airports_ticker = "Unknown"
+                airport_prov = "Unknown"
+                airport_dest = "Unknown"
+
+            return flight_nb, airports_ticker, airport_prov, airport_dest
 
 
 
@@ -83,10 +93,10 @@ class Tracker():
             realative_bearing_screen = round((bearing - self.screen_orientation) % 360,1)
             relative_distance_km = round(np.sqrt(x**2 + y**2) * 6371,1)
         except:
-            realative_bearing_screen = "N/A"
-            lat_dir = "N/A"
-            lon_dir = "N/A"
-            relative_distance_km = "N/A"
+            realative_bearing_screen = "."
+            lat_dir = "."
+            lon_dir = "."
+            relative_distance_km = "."
             
         return realative_bearing_screen,lat_dir,lon_dir, relative_distance_km
 
@@ -117,7 +127,7 @@ class Tracker():
                     else:
                         arrow = arrows[7]  # NW
                 else:
-                    arrow = "?"
+                    arrow = " "
                 self.console.clear()
 
                 # Big callsign
