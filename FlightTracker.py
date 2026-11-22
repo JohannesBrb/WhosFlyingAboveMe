@@ -17,7 +17,7 @@ class Tracker():
         # API endpoints
         self.planes_url = f"{url}/v2/lat/{lat}/lon/{lon}/dist/{radius_nm}"
         self.single_plane_url = f"{url}/v2/closest/{lat}/{lon}/{radius_nm}"
-        self.route_url = f"{url}/api/0/routeset"
+        self.route_url = "https://api.adsbdb.com/v0/callsign"
 
         self.fig = Figlet(font="big")
         self.console = Console()
@@ -29,27 +29,36 @@ class Tracker():
 
 
     def query_route_info(self):
-        # Route information query
+        callsign = self.closest_plane["ac"][0].get("flight", "").strip()
+        if not callsign:
+            return "Unknown", "Unknown", "Unknown"
+
         try:
-            payload = {
-                "planes": [
-                    {
-                    "callsign": self.closest_plane["ac"][0]["flight"].strip(), 
-                    "lat": self.closest_plane["ac"][0]["lat"], 
-                    "lng": self.closest_plane["ac"][0]["lon"]
-                    }
-                ]
-            }
-            self.route = requests.post(self.route_url, json=payload).json()
+            response = requests.get(f"{self.route_url}/{callsign}", timeout=10)
+            if response.status_code == 404:
+                return "Unknown", "Unknown", "Unknown"
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as error:
+            self.console.print(
+                f"Route lookup failed: {error}", style="yellow", markup=False
+            )
+            return "Unknown", "Unknown", "Unknown"
 
-            airports_ticker = self.route[0]["_airport_codes_iata"].strip()
-            airport_prov = self.route[0]["_airports"][0]["location"].strip()
-            airport_dest = self.route[0]["_airports"][1]["location"].strip()
-
-        except:
-            airports_ticker = "Unknown"
-            airport_prov = "Unknown"
-            airport_dest = "Unknown"
+        route = data.get("response", {}).get("flightroute", {})
+        origin = route.get("origin") or {}
+        destination = route.get("destination") or {}
+        origin_code = origin.get("iata_code")
+        destination_code = destination.get("iata_code")
+        airports_ticker = (
+            f"{origin_code}-{destination_code}"
+            if origin_code and destination_code
+            else "Unknown"
+        )
+        airport_prov = origin.get("municipality") or origin.get("name") or "Unknown"
+        airport_dest = (
+            destination.get("municipality") or destination.get("name") or "Unknown"
+        )
 
         return airports_ticker, airport_prov, airport_dest
 
@@ -140,7 +149,7 @@ class Tracker():
                 self.console.print(f"[bold yellow]Relative position:[/bold yellow] [white]{relative_bearing_screen}° {arrow}[/white]")
                 self.console.print(f"[bold cyan]Distance:[/bold cyan] [white]{relative_distance_km} km[/white]")
 
-                time.sleep(5)
+                time.sleep(10)
 
             except KeyboardInterrupt:
                 self.console.clear()
@@ -151,9 +160,9 @@ class Tracker():
 
 
 
-lat = 52.0                  # Current location latitude example
-lon = 4.0                   # Current location longitude example
-radius_km = 15              # Search radius in kilometers
+lat = 52.16206974883594     # Current location latitude example
+lon = 4.485876215707465     # Current location longitude example
+radius_km = 10              # Search radius in kilometers
 screen_orientation = 26     # Screen orientation in degrees (back of the screen points to this bearing)
 
 

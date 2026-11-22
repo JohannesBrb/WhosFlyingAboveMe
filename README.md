@@ -41,6 +41,8 @@ Distance: 14.1 km
 ## Data/API License
 The flight data and API used (ADSB.lol) are licensed under the Open Data Commons Open Database License (ODbL) v1.0, the same license as OpenStreetMap.
 
+Route lookups use ADSBDB by aircraft callsign; route information may be unavailable for some flights.
+
 For more information, see:
 - [ODbL License](https://opendatacommons.org/licenses/odbl/1-0/)
 - [ADSB.lol License Info](https://adsb.lol/license)
